@@ -87,7 +87,7 @@ async def main(question=None, base_directory=None):
             system_prompt=f"Найди в тексте точный ответ на вопрос '{question}' и напиши краткий ответ. Если ответа нет - верни None",
             temperature=0.0, #более строгий ответ в привязке к тексту
             max_tokens=2000,
-            folder_id="b1glp0iqac5h7ihhmh7b"
+            folder_id="папка"
         )
 
         answer = await answer_task
