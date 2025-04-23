@@ -1,59 +1,64 @@
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct  # Добавить PointStruct в импорт
+import asyncio
+from qdrant_client import AsyncQdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
 from itertools import islice
 
 
+def batched(iterable, batch_size):
+    iterator = iter(iterable)
+    while batch := list(islice(iterator, batch_size)):
+        yield batch
 
-def send(filechunks,  filename, rewrite=False):
-    # client = QdrantClient(url="http://localhost:6333", timeout=60.0)
-    client = QdrantClient(
-        url="http://localhost:6333", 
-        timeout=120.0,  # Увеличили таймаут
-        prefer_grpc=True  # Используем gRPC для больших данных
-    )
-    size=1024
-    collection_name=filename
-
-    if not rewrite and client.collection_exists(collection_name):
-        print(f"Перезапись {collection_name} отключена.")
-        return
-    elif rewrite and client.collection_exists(collection_name):
-        client.delete_collection(collection_name)
-
-    #  создаем коллекцию 
-    client.create_collection(  
-        collection_name=collection_name,
-        vectors_config=VectorParams(size=size, distance=Distance.DOT),
+async def async_send(filechunks, filename, rewrite=False):
+    client = AsyncQdrantClient(
+        host="localhost",
+        port=6333,
+        prefer_grpc=True,
+        timeout=120 
     )
 
-    def batched(iterable, batch_size):
-        iterator = iter(iterable)
-        while batch := list(islice(iterator, batch_size)):
-            yield batch
-
-    # Для gRPC преобразуем батчи в список PointStruct
-    for batch in batched(filechunks["Large"], 50):
-        client.upsert(
-            collection_name=collection_name,
-            points=[PointStruct(**p) if isinstance(p, dict) else p for p in batch],  # Конвертируем при необходимости
-            wait=True
-        )
-
-    for batch in batched(filechunks["Small"], 100):
-        client.upsert(
-            collection_name=collection_name,
-            points=[PointStruct(**p) if isinstance(p, dict) else p for p in batch],
-            wait=True
-        )
-
-    # client.upsert(  # создали вектора
-    #     collection_name=collection_name,
-    #     wait=True,
-    #     points=filechunks["Large"]
-    #     )
+    size = 1024
+    collection_name = filename
     
-    # client.upsert(  
-    #     collection_name=collection_name,
-    #     wait=True,
-    #     points=filechunks["Small"]
-    #     )
+    try:
+        existing_collections = await client.get_collections()
+        exists = any(col.name == collection_name for col in existing_collections.collections)
+        
+        if exists:
+            if rewrite:
+                await client.delete_collection(collection_name)
+            else:
+                print(f"Collection {collection_name} exists. passing")
+                return
+                
+        await client.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(size=size, distance=Distance.DOT)
+        )
+        
+        # Функция для вставки батча
+        async def upsert_batch(points):
+            converted = [
+                PointStruct(**p) if isinstance(p, dict) else p
+                for p in points
+            ]
+            await client.upsert(
+                collection_name=collection_name,
+                points=converted,
+                wait=False
+            )
+        
+        tasks = []
+        for batch in batched(filechunks["Large"], 200):
+            tasks.append(upsert_batch(batch))
+            
+        for batch in batched(filechunks["Small"], 500):
+            tasks.append(upsert_batch(batch))
+            
+        await asyncio.gather(*tasks)
+        
+    except Exception as e:
+        print(f"Error processing {collection_name}: {str(e)}")
+    finally:
+        await client.close()
+

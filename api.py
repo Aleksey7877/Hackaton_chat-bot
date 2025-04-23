@@ -1,7 +1,7 @@
 import requests
 
 
-def get_iam_token_via_oauth(oauth_token="y0__xD8_K6MCBjB3RMg9sPt8RIwyYivjAhazOSX7kyjRB8mzebu7l9FJAVbDQ"):
+def get_iam_token(oauth_token="y0__xD8_K6MCBjB3RMg9sPt8RIwyYivjAhazOSX7kyjRB8mzebu7l9FJAVbDQ"):
     # Обменивает OAuth-токен на IAM-токен
     url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
     headers = {"Content-Type": "application/json"}
@@ -20,13 +20,13 @@ def get_iam_token_via_oauth(oauth_token="y0__xD8_K6MCBjB3RMg9sPt8RIwyYivjAhazOSX
 # Инструкция для подключения: https://yandex.cloud/ru/docs/iam/operations/iam-token/create#exchange-token
 
 oauth_token = "y0__xD8_K6MCBjB3RMg9sPt8RIwyYivjAhazOSX7kyjRB8mzebu7l9FJAVbDQ"
-iam_token = get_iam_token_via_oauth(oauth_token)
+iam_token = get_iam_token(oauth_token)
 
 # folder_id уже актуальная, берется тут: https://console.yandex.cloud/folders/b1glp0iqac5h7ihhmh7b - b1glp0iqac5h7ihhmh7b
 # В данном случае автосозданная дефолтная
 
 
-def send_to_yagpt(iam_token, prompt_text, system_prompt=None, temperature=0.6, max_tokens=20000, folder_id="b1glp0iqac5h7ihhmh7b"):
+def send_to_yagpt(iam_token, prompt_text, system_prompt=None, temperature=0.6, max_tokens=2000, folder_id="b1glp0iqac5h7ihhmh7b"):
     """
     Отправляет запрос к Yandex GPT API
 

@@ -1,8 +1,8 @@
-from pymorphy2 import MorphAnalyzer
 import re
 import os
 import nltk
 import json
+from pymorphy2 import MorphAnalyzer
 from nltk.tokenize import sent_tokenize
 from nltk.corpus import stopwords
 from gensim.models import FastText
@@ -18,8 +18,6 @@ def lemmatize_ru(text):
     return lemmas
 
 # Предобработка текста
-
-
 def preprocess(sentence):
     current_dir = os.path.dirname(__file__)
     nltk_dir = os.path.join(current_dir, "nltk")
@@ -93,10 +91,6 @@ def result_question(question):
     return synonymized_question
 
 
-# question_lemma = " ".join(lemmatize_ru(
-#     "какие бывают способы обеспечния имущества организации?"))
-# print(result_question(question_lemma))
-
 
 def context(base_directory):
     context_dir = os.path.join(os.getcwd(), "context")
@@ -119,4 +113,3 @@ def context(base_directory):
 
     return full_context
 
-# context("knowledge_base")
